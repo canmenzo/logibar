@@ -24,51 +24,36 @@ def _font(size):
                 pass
     return ImageFont.load_default()
 
-WHITE = (215, 215, 215, 255)
-BG    = (22, 22, 22, 245)
-TRACK = (50, 50, 50, 255)
-BAR   = (190, 190, 190, 255)
-
-def _progress(draw, pct):
-    x1, y1, x2, y2 = 6, 53, 58, 59
-    draw.rounded_rectangle([x1, y1, x2, y2], radius=3, fill=TRACK)
-    if pct and pct > 0:
-        fw = max(4, int((x2 - x1) * pct / 100))
-        draw.rounded_rectangle([x1, y1, x1 + fw, y2], radius=3, fill=BAR)
+WHITE = (240, 240, 240, 255)
 
 def make_mouse_icon(pct):
-    SIZE = 64
-    img = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
+    W, H = 96, 32
+    img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
-    d.rounded_rectangle([0, 0, SIZE-1, SIZE-1], radius=10, fill=BG)
-
-    cx = SIZE // 2
-    mw, mh = 18, 24
-    x1, y1, x2, y2 = cx-mw//2, 5, cx+mw//2, 5+mh
+    # Mouse silhouette on left
+    mx, my = 14, 16
+    mw, mh = 16, 24
+    x1, y1, x2, y2 = mx-mw//2, my-mh//2, mx+mw//2, my+mh//2
     d.rounded_rectangle([x1, y1, x2, y2], radius=mw//2, outline=WHITE, width=2)
-    d.line([cx, y1+2, cx, y1+mh//2-1], fill=WHITE, width=1)
-    d.rounded_rectangle([cx-2, y1+5, cx+2, y1+11], radius=2, fill=WHITE)
-
-    d.text((cx, 42), f"{pct}%" if pct is not None else "--", fill=(235, 235, 235), anchor="mm", font=_font(18))
-    _progress(d, pct)
+    d.line([mx, y1+2, mx, y1+mh//2], fill=WHITE, width=2)
+    d.rounded_rectangle([mx-2, y1+5, mx+2, y1+10], radius=2, fill=WHITE)
+    # Percentage on right
+    d.text((58, 16), f"{pct}%" if pct is not None else "--", fill=WHITE, anchor="mm", font=_font(20))
     return img
 
 def make_headset_icon(pct):
-    SIZE = 64
-    img = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
+    W, H = 96, 32
+    img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
-    d.rounded_rectangle([0, 0, SIZE-1, SIZE-1], radius=10, fill=BG)
-
-    cx = SIZE // 2
-    r, cy = 15, 22
+    # Headset silhouette on left
+    cx, cy = 16, 16
+    r = 11
     d.arc([cx-r, cy-r, cx+r, cy+r], start=180, end=360, fill=WHITE, width=2)
-
-    ew, eh = 8, 12
-    for ex in (cx - r, cx + r):
+    ew, eh = 7, 11
+    for ex in (cx-r, cx+r):
         d.ellipse([ex-ew//2, cy-eh//2, ex+ew//2, cy+eh//2], outline=WHITE, width=2)
-
-    d.text((cx, 42), f"{pct}%" if pct is not None else "--", fill=(235, 235, 235), anchor="mm", font=_font(18))
-    _progress(d, pct)
+    # Percentage on right
+    d.text((60, 16), f"{pct}%" if pct is not None else "--", fill=WHITE, anchor="mm", font=_font(20))
     return img
 
 
