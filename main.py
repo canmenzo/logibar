@@ -38,30 +38,22 @@ def make_icon(pct, label):
     img = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
 
-    draw.rounded_rectangle([0, 0, SIZE - 1, SIZE - 1], radius=10, fill=(28, 28, 28, 240))
+    # Dark background
+    draw.rounded_rectangle([0, 0, SIZE - 1, SIZE - 1], radius=10, fill=(22, 22, 22, 245))
 
-    # Small label at top
-    draw.text((SIZE // 2, 11), label, fill=(150, 150, 150, 255), anchor="mm", font=_font(10))
+    # Label at top
+    draw.text((SIZE // 2, 13), label, fill=(110, 110, 110, 255), anchor="mm", font=_font(10))
 
-    # Battery body
-    BX1, BY1, BX2, BY2 = 3, 18, 54, 46
-    NX1, NY1, NX2, NY2 = 54, 26, 61, 38
-    BORDER = (210, 210, 210, 255)
+    # Big percentage number
+    text = f"{pct}%" if pct is not None else "--"
+    draw.text((SIZE // 2, 36), text, fill=(235, 235, 235, 255), anchor="mm", font=_font(22))
 
-    draw.rectangle([BX1, BY1, BX2, BY2], outline=BORDER, width=2)
-    draw.rectangle([NX1, NY1, NX2, NY2], fill=BORDER)
-
-    # Fill bar — left to right
+    # Progress bar at bottom — left to right fill
+    BX1, BY1, BX2, BY2 = 6, 51, 58, 58
+    draw.rounded_rectangle([BX1, BY1, BX2, BY2], radius=3, fill=(50, 50, 50, 255))
     if pct is not None and pct > 0:
-        inner_w = BX2 - BX1 - 4
-        fill_w = max(1, int(inner_w * pct / 100))
-        draw.rectangle([BX1 + 2, BY1 + 2, BX1 + 2 + fill_w, BY2 - 2], fill=(195, 195, 195, 240))
-
-    # Percent number centered in battery
-    text = f"{pct}%" if pct is not None else "?"
-    cx = (BX1 + BX2) // 2
-    cy = (BY1 + BY2) // 2
-    draw.text((cx, cy), text, fill=(255, 255, 255, 255), anchor="mm", font=_font(14))
+        fw = max(4, int((BX2 - BX1) * pct / 100))
+        draw.rounded_rectangle([BX1, BY1, BX1 + fw, BY2], radius=3, fill=(190, 190, 190, 255))
 
     return img
 
