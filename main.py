@@ -1,6 +1,5 @@
 import ctypes
 import os
-import sys
 import threading
 import time
 from PIL import Image, ImageDraw, ImageFont
@@ -9,52 +8,67 @@ from ghub import get_battery
 
 POLL_INTERVAL = 30
 
-# Show "logibar" in Windows app settings instead of "Python"
 try:
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("logibar")
 except Exception:
     pass
 
-_FONT_PATHS = [
-    r"C:\Windows\Fonts\arialbd.ttf",
-    r"C:\Windows\Fonts\arial.ttf",
-    r"C:\Windows\Fonts\calibrib.ttf",
-    r"C:\Windows\Fonts\segoeui.ttf",
-]
-
+_FONTS = [r"C:\Windows\Fonts\arialbd.ttf", r"C:\Windows\Fonts\arial.ttf"]
 
 def _font(size):
-    for path in _FONT_PATHS:
-        if os.path.exists(path):
+    for p in _FONTS:
+        if os.path.exists(p):
             try:
-                return ImageFont.truetype(path, size)
+                return ImageFont.truetype(p, size)
             except Exception:
                 pass
     return ImageFont.load_default()
 
+WHITE = (215, 215, 215, 255)
+BG    = (22, 22, 22, 245)
+TRACK = (50, 50, 50, 255)
+BAR   = (190, 190, 190, 255)
 
-def make_icon(pct, label):
+def _progress(draw, pct):
+    x1, y1, x2, y2 = 6, 53, 58, 59
+    draw.rounded_rectangle([x1, y1, x2, y2], radius=3, fill=TRACK)
+    if pct and pct > 0:
+        fw = max(4, int((x2 - x1) * pct / 100))
+        draw.rounded_rectangle([x1, y1, x1 + fw, y2], radius=3, fill=BAR)
+
+def make_mouse_icon(pct):
     SIZE = 64
     img = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
+    d = ImageDraw.Draw(img)
+    d.rounded_rectangle([0, 0, SIZE-1, SIZE-1], radius=10, fill=BG)
 
-    # Dark background
-    draw.rounded_rectangle([0, 0, SIZE - 1, SIZE - 1], radius=10, fill=(22, 22, 22, 245))
+    cx = SIZE // 2
+    mw, mh = 18, 24
+    x1, y1, x2, y2 = cx-mw//2, 5, cx+mw//2, 5+mh
+    d.rounded_rectangle([x1, y1, x2, y2], radius=mw//2, outline=WHITE, width=2)
+    d.line([cx, y1+2, cx, y1+mh//2-1], fill=WHITE, width=1)
+    d.rounded_rectangle([cx-2, y1+5, cx+2, y1+11], radius=2, fill=WHITE)
 
-    # Label at top
-    draw.text((SIZE // 2, 13), label, fill=(110, 110, 110, 255), anchor="mm", font=_font(10))
+    d.text((cx, 42), f"{pct}%" if pct is not None else "--", fill=(235, 235, 235), anchor="mm", font=_font(18))
+    _progress(d, pct)
+    return img
 
-    # Big percentage number
-    text = f"{pct}%" if pct is not None else "--"
-    draw.text((SIZE // 2, 36), text, fill=(235, 235, 235, 255), anchor="mm", font=_font(22))
+def make_headset_icon(pct):
+    SIZE = 64
+    img = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.rounded_rectangle([0, 0, SIZE-1, SIZE-1], radius=10, fill=BG)
 
-    # Progress bar at bottom — left to right fill
-    BX1, BY1, BX2, BY2 = 6, 51, 58, 58
-    draw.rounded_rectangle([BX1, BY1, BX2, BY2], radius=3, fill=(50, 50, 50, 255))
-    if pct is not None and pct > 0:
-        fw = max(4, int((BX2 - BX1) * pct / 100))
-        draw.rounded_rectangle([BX1, BY1, BX1 + fw, BY2], radius=3, fill=(190, 190, 190, 255))
+    cx = SIZE // 2
+    r, cy = 15, 22
+    d.arc([cx-r, cy-r, cx+r, cy+r], start=180, end=360, fill=WHITE, width=2)
 
+    ew, eh = 8, 12
+    for ex in (cx - r, cx + r):
+        d.ellipse([ex-ew//2, cy-eh//2, ex+ew//2, cy+eh//2], outline=WHITE, width=2)
+
+    d.text((cx, 42), f"{pct}%" if pct is not None else "--", fill=(235, 235, 235), anchor="mm", font=_font(18))
+    _progress(d, pct)
     return img
 
 
@@ -73,10 +87,10 @@ class App:
         except Exception:
             pass
         if self.mouse_icon:
-            self.mouse_icon.icon = make_icon(self.mouse, "MOUSE")
+            self.mouse_icon.icon = make_mouse_icon(self.mouse)
             self.mouse_icon.title = f"Mouse: {self.mouse}%" if self.mouse is not None else "Mouse: N/A"
         if self.headset_icon:
-            self.headset_icon.icon = make_icon(self.headset, "HEADSET")
+            self.headset_icon.icon = make_headset_icon(self.headset)
             self.headset_icon.title = f"Headset: {self.headset}%" if self.headset is not None else "Headset: N/A"
 
     def _poll(self):
@@ -101,13 +115,13 @@ class App:
 
         self.mouse_icon = pystray.Icon(
             "logibar-mouse",
-            make_icon(self.mouse, "MOUSE"),
+            make_mouse_icon(self.mouse),
             f"Mouse: {self.mouse}%" if self.mouse is not None else "Mouse: N/A",
             menu=menu,
         )
         self.headset_icon = pystray.Icon(
             "logibar-headset",
-            make_icon(self.headset, "HEADSET"),
+            make_headset_icon(self.headset),
             f"Headset: {self.headset}%" if self.headset is not None else "Headset: N/A",
             menu=menu,
         )
