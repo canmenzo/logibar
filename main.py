@@ -2,7 +2,7 @@ import ctypes
 import os
 import threading
 import time
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 import pystray
 from ghub import get_battery
 
@@ -13,47 +13,45 @@ try:
 except Exception:
     pass
 
-_FONTS = [r"C:\Windows\Fonts\arialbd.ttf", r"C:\Windows\Fonts\arial.ttf"]
+def _color(pct):
+    if pct is None:
+        return (130, 130, 130, 255)
+    if pct <= 20:
+        return (230, 60, 60, 255)
+    if pct <= 50:
+        return (235, 185, 0, 255)
+    return (55, 200, 70, 255)
 
-def _font(size):
-    for p in _FONTS:
-        if os.path.exists(p):
-            try:
-                return ImageFont.truetype(p, size)
-            except Exception:
-                pass
-    return ImageFont.load_default()
-
-WHITE = (240, 240, 240, 255)
+def _darker(c, amount=70):
+    return tuple(max(0, x - amount) for x in c[:3]) + (255,)
 
 def make_mouse_icon(pct):
-    W, H = 96, 32
-    img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    SIZE = 64
+    img = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
-    # Mouse silhouette on left
-    mx, my = 14, 16
-    mw, mh = 16, 24
-    x1, y1, x2, y2 = mx-mw//2, my-mh//2, mx+mw//2, my+mh//2
-    d.rounded_rectangle([x1, y1, x2, y2], radius=mw//2, outline=WHITE, width=2)
-    d.line([mx, y1+2, mx, y1+mh//2], fill=WHITE, width=2)
-    d.rounded_rectangle([mx-2, y1+5, mx+2, y1+10], radius=2, fill=WHITE)
-    # Percentage on right
-    d.text((58, 16), f"{pct}%" if pct is not None else "--", fill=WHITE, anchor="mm", font=_font(20))
+    color = _color(pct)
+    dark = _darker(color)
+
+    cx = SIZE // 2
+    mw, mh = 38, 52
+    x1, y1, x2, y2 = cx - mw//2, 6, cx + mw//2, 6 + mh
+    d.rounded_rectangle([x1, y1, x2, y2], radius=mw//2, fill=color)
+    d.line([cx, y1 + 4, cx, y1 + mh//2 - 2], fill=dark, width=2)
+    d.rounded_rectangle([cx-3, y1 + 9, cx+3, y1 + 20], radius=3, fill=dark)
     return img
 
 def make_headset_icon(pct):
-    W, H = 96, 32
-    img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    SIZE = 64
+    img = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
-    # Headset silhouette on left
-    cx, cy = 16, 16
-    r = 11
-    d.arc([cx-r, cy-r, cx+r, cy+r], start=180, end=360, fill=WHITE, width=2)
-    ew, eh = 7, 11
-    for ex in (cx-r, cx+r):
-        d.ellipse([ex-ew//2, cy-eh//2, ex+ew//2, cy+eh//2], outline=WHITE, width=2)
-    # Percentage on right
-    d.text((60, 16), f"{pct}%" if pct is not None else "--", fill=WHITE, anchor="mm", font=_font(20))
+    color = _color(pct)
+
+    cx, cy = SIZE//2, 32
+    r = 22
+    d.arc([cx-r, cy-r, cx+r, cy+r], start=180, end=360, fill=color, width=7)
+    ew, eh = 14, 20
+    for ex in (cx - r, cx + r):
+        d.rounded_rectangle([ex - ew//2, cy - 4, ex + ew//2, cy - 4 + eh], radius=5, fill=color)
     return img
 
 
