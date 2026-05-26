@@ -1,25 +1,47 @@
 # logibar
 
-Windows system tray battery monitor for Logitech wireless devices. Reads from G HUB's local database — no API hacks, no polling overhead.
+Windows tray battery monitor for Logitech wireless devices. Reads from G HUB's local SQLite DB — no API hacks.
 
-Two icons in tray: one for mouse, one for headset. Each shows a battery bar (left→right) with percentage. Monochrome. Updates every 30 seconds.
+Two tray icons (mouse + headset), tinted by battery level: green > 50%, yellow ≤ 50%, red ≤ 20%, gray = unknown. Refreshes every 30 seconds.
 
-## Setup
+## Run from source
 
 ```powershell
 python -m pip install -r requirements.txt
 pythonw main.py
 ```
 
-Requires Logitech G HUB running in background.
+Requires Logitech G HUB running in the background.
 
-## Build as .exe (shows "logibar" in tray settings instead of "Python")
+## Build .exe
 
 ```powershell
-.\build.ps1
-# output: dist\logibar.exe
+.\build.ps1   # output: dist\logibar.exe (embedded Logitech-G icon + "logibar" identity)
 ```
 
-## Auto-start
+## Install to startup
 
-Put a shortcut to `dist\logibar.exe` (or `run.vbs` for the script version) in `shell:startup`.
+```powershell
+.\install.ps1   # copies exe to %LOCALAPPDATA%\Programs\logibar, adds startup shortcut, launches
+.\uninstall.ps1 # removes everything: shortcut, install dir, registry entries, tray cache
+```
+
+After install:
+- Task Manager > Startup → **logibar** with Logitech-G icon
+- Settings > Personalization > Taskbar > Other system tray icons → **logibar** with Logitech-G icon
+- Process name: `logibar.exe`
+
+`install.ps1` restarts Explorer to flush the tray-icon cache.
+
+## Layout
+
+```
+main.py             tray app (loads PNGs, tints by battery level)
+ghub.py             reads G HUB settings.db
+make_ico.py         generates assets/app.ico from the Logitech-G PNG
+version_info.txt    sets FileDescription = "logibar" on the .exe
+build.ps1           PyInstaller bundle (--onefile, --windowed, --icon, --version-file)
+install.ps1         per-user install + startup + AppUserModelID + tray cache reset
+uninstall.ps1       full removal
+assets/             mouseicon.png, headseticon.png, source logo for app.ico
+```
