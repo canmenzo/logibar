@@ -1,58 +1,54 @@
+import atexit
 import ctypes
 import os
+import sys
 import threading
 import time
-from PIL import Image, ImageDraw
+from PIL import Image
 import pystray
-from ghub import get_battery
+from ghub import get_battery, cleanup_temp
 
 POLL_INTERVAL = 30
+APP_ID = "menzo.logibar"
 
 try:
-    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("logibar")
-except Exception:
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(APP_ID)
+except (AttributeError, OSError):
     pass
 
-def _color(pct):
-    if pct is None:
-        return (130, 130, 130, 255)
-    if pct <= 20:
-        return (230, 60, 60, 255)
-    if pct <= 50:
-        return (235, 185, 0, 255)
-    return (55, 200, 70, 255)
+atexit.register(cleanup_temp)
 
-def _darker(c, amount=70):
-    return tuple(max(0, x - amount) for x in c[:3]) + (255,)
+
+def _resource(rel):
+    base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base, rel)
+
+
+def _color(pct):
+    if pct is None: return (130, 130, 130)
+    if pct <= 20:   return (230, 60, 60)
+    if pct <= 50:   return (235, 185, 0)
+    return (55, 200, 70)
+
+
+MOUSE_SRC = Image.open(_resource("assets/mouseicon.png")).convert("RGBA")
+HEADSET_SRC = Image.open(_resource("assets/headseticon.png")).convert("RGBA")
+
+
+def _tint(src, color):
+    # Preserve alpha (silhouette + anti-aliased edges), replace RGB with target color.
+    alpha = src.split()[3]
+    solid = Image.new("RGBA", src.size, color + (255,))
+    solid.putalpha(alpha)
+    return solid
+
 
 def make_mouse_icon(pct):
-    SIZE = 64
-    img = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
-    color = _color(pct)
-    dark = _darker(color)
+    return _tint(MOUSE_SRC, _color(pct))
 
-    cx = SIZE // 2
-    mw, mh = 38, 52
-    x1, y1, x2, y2 = cx - mw//2, 6, cx + mw//2, 6 + mh
-    d.rounded_rectangle([x1, y1, x2, y2], radius=mw//2, fill=color)
-    d.line([cx, y1 + 4, cx, y1 + mh//2 - 2], fill=dark, width=2)
-    d.rounded_rectangle([cx-3, y1 + 9, cx+3, y1 + 20], radius=3, fill=dark)
-    return img
 
 def make_headset_icon(pct):
-    SIZE = 64
-    img = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
-    color = _color(pct)
-
-    cx, cy = SIZE//2, 32
-    r = 22
-    d.arc([cx-r, cy-r, cx+r, cy+r], start=180, end=360, fill=color, width=7)
-    ew, eh = 14, 20
-    for ex in (cx - r, cx + r):
-        d.rounded_rectangle([ex - ew//2, cy - 4, ex + ew//2, cy - 4 + eh], radius=5, fill=color)
-    return img
+    return _tint(HEADSET_SRC, _color(pct))
 
 
 class App:
@@ -67,7 +63,7 @@ class App:
             data = get_battery()
             self.mouse = data["mouse"]
             self.headset = data["headset"]
-        except Exception:
+        except (OSError, ValueError, KeyError):
             pass
         if self.mouse_icon:
             self.mouse_icon.icon = make_mouse_icon(self.mouse)
