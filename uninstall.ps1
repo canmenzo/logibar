@@ -1,4 +1,4 @@
-# Removes logibar: startup shortcut, install dir, AppUserModelID, tray cache.
+# Removes logibar: startup entry, install dir, AppUserModelID, tray cache.
 
 $APP_ID = "menzo.logibar"
 
@@ -6,13 +6,11 @@ Get-Process -Name logibar -ErrorAction SilentlyContinue | ForEach-Object {
     $_ | Stop-Process -Force
     Write-Host "Stopped logibar (PID $($_.Id))" -ForegroundColor Cyan
 }
+Start-Sleep -Milliseconds 500
 
-$startup = [Environment]::GetFolderPath("Startup")
-$link    = Join-Path $startup "logibar.lnk"
-if (Test-Path $link) {
-    Remove-Item $link -Force
-    Write-Host "Removed startup shortcut: $link" -ForegroundColor Green
-}
+Remove-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "logibar" -ErrorAction SilentlyContinue
+Remove-Item (Join-Path ([Environment]::GetFolderPath("Startup")) "logibar.lnk") -ErrorAction SilentlyContinue
+Write-Host "Removed startup entry" -ForegroundColor Green
 
 $installDir = Join-Path $env:LOCALAPPDATA "Programs\logibar"
 if (Test-Path $installDir) {
@@ -37,4 +35,4 @@ if (Test-Path $niPath) {
     }
 }
 
-Write-Host "`nDone. (Sign out / in to fully refresh tray Settings.)" -ForegroundColor Green
+Write-Host "`nDone." -ForegroundColor Green

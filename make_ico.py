@@ -1,20 +1,14 @@
-"""Convert assets/png-transparent-logitech-logo-icon.png -> assets/app.ico (multi-res)."""
+"""Render assets/app.ico (multi-res, each size drawn natively) from icons.app_icon."""
 import os
-from PIL import Image
+from icons import app_icon
 
-SRC = os.path.join(os.path.dirname(__file__), "assets", "png-transparent-logitech-logo-icon.png")
-DST = os.path.join(os.path.dirname(__file__), "assets", "app.ico")
-SIZES = [(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)]
+DST = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "app.ico")
+SIZES = [16, 20, 24, 32, 40, 48, 64, 128, 256]
 
 
 def build():
-    src = Image.open(SRC).convert("RGBA")
-    # Pad to square if needed (some PNGs come non-square)
-    w, h = src.size
-    side = max(w, h)
-    sq = Image.new("RGBA", (side, side), (0, 0, 0, 0))
-    sq.paste(src, ((side - w) // 2, (side - h) // 2))
-    sq.save(DST, format="ICO", sizes=SIZES)
+    frames = [app_icon(s) for s in SIZES]
+    frames[-1].save(DST, format="ICO", sizes=[(s, s) for s in SIZES], append_images=frames[:-1])
     print(f"wrote {DST}")
 
 
