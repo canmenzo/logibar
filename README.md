@@ -32,7 +32,7 @@ Installed with `install.ps1`? Run `powershell -ExecutionPolicy Bypass -File unin
 
 ## 🛠️ Build from source
 
-Needs [Python 3.11+](https://www.python.org/downloads/).
+Needs [Python 3.8+](https://www.python.org/downloads/) (the floor set by `Pillow>=10`; developed on 3.11).
 
 ```powershell
 git clone https://github.com/canmenzo/logibar
