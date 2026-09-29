@@ -1,6 +1,6 @@
 # 🔋 logibar
 
-[![release](https://img.shields.io/github/v/release/canmenzo/logibar)](https://github.com/canmenzo/logibar/releases/latest) ![platform](https://img.shields.io/badge/platform-Windows-0078D6?logo=windows&logoColor=white) ![requires](https://img.shields.io/badge/requires-Logitech%20G%20HUB-00B8FC)
+[![release](https://img.shields.io/github/v/release/canmenzo/logibar)](https://github.com/canmenzo/logibar/releases/latest) ![platform](https://img.shields.io/badge/platform-Windows-0078D6?logo=windows&logoColor=white) ![requires](https://img.shields.io/badge/requires-Logitech%20G%20HUB-00B8FC) [![license](https://img.shields.io/github/license/canmenzo/logibar)](LICENSE)
 
 Your Logitech mouse, headset and keyboard battery, right in the Windows tray.
 
@@ -44,6 +44,6 @@ powershell -ExecutionPolicy Bypass -File install.ps1
 
 ## 📄 License
 
-No license yet.
+[MIT](LICENSE)
 
 <sub>Not affiliated with Logitech.</sub>
