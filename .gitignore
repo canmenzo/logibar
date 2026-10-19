@@ -1,8 +1,3 @@
-__pycache__/
-*.pyc
-.venv/
-venv/
-build/
+/target/
 dist/
-*.spec
-assets/app.ico
+/test-results/
