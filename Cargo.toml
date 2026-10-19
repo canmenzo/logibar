@@ -1,0 +1,29 @@
+[package]
+name = "logibar"
+version = "2.0.0"
+edition = "2024"
+license = "MIT"
+description = "Native Windows tray battery monitor for Logitech G HUB"
+repository = "https://github.com/canmenzo/logibar"
+
+[dependencies]
+chrono = { version = "0.4.42", default-features = false, features = ["std", "clock"] }
+rusqlite = { version = "0.40.0", features = ["bundled"] }
+serde_json = "1.0.145"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61.2", features = [
+    "Win32_Foundation", "Win32_Graphics_Gdi", "Win32_Security",
+    "Win32_System_LibraryLoader", "Win32_System_Registry", "Win32_System_Threading",
+    "Win32_UI_HiDpi", "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging",
+] }
+
+[build-dependencies]
+embed-resource = "3.0.6"
+
+[dev-dependencies]
+tempfile = "3.23.0"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1

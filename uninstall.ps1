@@ -1,38 +1,45 @@
-# Removes logibar: startup entry, install dir, AppUserModelID, tray cache.
+﻿[CmdletBinding(SupportsShouldProcess)]
+param([string]$SandboxRoot)
 
-$APP_ID = "menzo.logibar"
-
-Get-Process -Name logibar -ErrorAction SilentlyContinue | ForEach-Object {
-    $_ | Stop-Process -Force
-    Write-Host "Stopped logibar (PID $($_.Id))" -ForegroundColor Cyan
+$ErrorActionPreference = 'Stop'
+$root = $env:LOCALAPPDATA
+if ($SandboxRoot) {
+    $root = [IO.Path]::GetFullPath($SandboxRoot)
+    $tempPrefix = [IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd('\') + '\'
+    if (-not $root.StartsWith($tempPrefix, [StringComparison]::OrdinalIgnoreCase)) { throw 'SandboxRoot must be a subdirectory of the Windows temp directory.' }
 }
-Start-Sleep -Milliseconds 500
-
-Remove-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "logibar" -ErrorAction SilentlyContinue
-Remove-Item (Join-Path ([Environment]::GetFolderPath("Startup")) "logibar.lnk") -ErrorAction SilentlyContinue
-Write-Host "Removed startup entry" -ForegroundColor Green
-
-$installDir = Join-Path $env:LOCALAPPDATA "Programs\logibar"
-if (Test-Path $installDir) {
-    Remove-Item $installDir -Recurse -Force
-    Write-Host "Removed install dir:      $installDir" -ForegroundColor Green
+$installDir = [IO.Path]::GetFullPath((Join-Path $root 'Programs\logibar'))
+$ancestor = $installDir
+while ($ancestor) {
+    if ((Test-Path -LiteralPath $ancestor) -and ((Get-Item -LiteralPath $ancestor -Force).Attributes -band [IO.FileAttributes]::ReparsePoint)) { throw "Refusing linked install path: $ancestor" }
+    $ancestor = Split-Path -Parent $ancestor
 }
-
-$aumiKey = "HKCU:\Software\Classes\AppUserModelId\$APP_ID"
-if (Test-Path $aumiKey) {
-    Remove-Item $aumiKey -Recurse -Force
-    Write-Host "Removed AppUserModelID:   $APP_ID" -ForegroundColor Green
-}
-
-$niPath = "HKCU:\Control Panel\NotifyIconSettings"
-if (Test-Path $niPath) {
-    Get-ChildItem $niPath | ForEach-Object {
-        $p = (Get-ItemProperty $_.PSPath -Name ExecutablePath -ErrorAction SilentlyContinue).ExecutablePath
-        if ($p -and $p -like "*logibar.exe") {
-            Remove-Item $_.PSPath -Recurse -Force
-            Write-Host "Removed tray cache entry: $($_.PSChildName)" -ForegroundColor DarkGray
-        }
+$marker = Join-Path $installDir 'install.json'
+if (-not (Test-Path -LiteralPath $marker)) { throw 'No native logibar installation manifest found. See README.md for legacy removal.' }
+$manifest = Get-Content -LiteralPath $marker -Raw | ConvertFrom-Json
+if ($manifest.product -ne 'menzo.logibar' -or $manifest.directory -ne $installDir) { throw 'Installation manifest does not match this directory.' }
+$exe = Join-Path $installDir 'logibar.exe'
+if (Get-Process -Name logibar -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $exe }) { throw 'Quit logibar from its tray menu before uninstalling.' }
+if (-not $PSCmdlet.ShouldProcess($installDir, 'Remove owned logibar files and matching per-user integration')) { return }
+if (-not $SandboxRoot) {
+    $runKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
+    $command = (Get-ItemProperty -LiteralPath $runKey -Name logibar -ErrorAction SilentlyContinue).logibar
+    $quoted = '"{0}"' -f $exe
+    if ($command -eq $quoted -or ($command -and $command.StartsWith($quoted + ' ', [StringComparison]::OrdinalIgnoreCase))) {
+        Remove-ItemProperty -LiteralPath $runKey -Name logibar
+    }
+    $appKey = 'HKCU:\Software\Classes\AppUserModelId\menzo.logibar'
+    if ((Get-ItemProperty -LiteralPath $appKey -Name IconResource -ErrorAction SilentlyContinue).IconResource -eq "$exe,0") { Remove-Item -LiteralPath $appKey -Force }
+    $legacy = Join-Path ([Environment]::GetFolderPath('Startup')) 'logibar.lnk'
+    if (Test-Path -LiteralPath $legacy) {
+        $shell = New-Object -ComObject WScript.Shell
+        if ($shell.CreateShortcut($legacy).TargetPath -eq $exe) { Remove-Item -LiteralPath $legacy -Force }
     }
 }
-
-Write-Host "`nDone." -ForegroundColor Green
+$owned = @('logibar.exe', 'LICENSE.txt', 'THIRD_PARTY_NOTICES.txt', 'build-info.json', 'uninstall.ps1', 'install.json')
+foreach ($file in $owned) {
+    $path = Join-Path $installDir $file
+    if (Test-Path -LiteralPath $path -PathType Leaf) { Remove-Item -LiteralPath $path -Force }
+}
+if (-not (Get-ChildItem -LiteralPath $installDir -Force)) { Remove-Item -LiteralPath $installDir -Force }
+Write-Output "Removed logibar from $installDir. Any unrelated files were retained."

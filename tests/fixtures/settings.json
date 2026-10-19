@@ -1,0 +1,18 @@
+{
+  "devices/known": {
+    "knownList": [
+      {"type": "MOUSE", "baseModelId": "pro_x_2_superstrike_wireless_mouse", "connected": true},
+      {"type": "MOUSE", "modelId": "g502_x_lightspeed", "connected": true},
+      {"type": "HEADSET", "baseModelId": "pro_x_wireless_headset", "connected": true},
+      {"type": "KEYBOARD", "baseModelId": "g915_tkl", "connected": false}
+    ]
+  },
+  "battery/prox2superstrikewirelessmouse/percentage": {"percentage": 70.9, "time": "2026-10-18T21:00:00-04:00"},
+  "battery/oldmouse/percentage": {"percentage": 3, "time": "2026-10-17T01:00:00Z"},
+  "battery/proxwirelessheadset/percentage": {"percentage": 30, "time": "2026-10-19T01:00:00Z"},
+  "battery/g915tkl/percentage": {"percentage": 15, "time": "2026-10-18T01:00:00Z"},
+  "battery/gamecontroller/percentage": {"percentage": 99, "time": "2026-10-19T01:00:00Z"},
+  "battery/badmouse/percentage": {"percentage": "99"},
+  "battery/notmouse/percentage/extra": {"percentage": 99},
+  "lighting/mouse/percentage": {"percentage": 99}
+}
