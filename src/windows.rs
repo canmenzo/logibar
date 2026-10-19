@@ -196,6 +196,9 @@ unsafe extern "system" fn window_proc(
                     EndMenu();
                 }
                 let _ = (*context).sender.send(event);
+                // Sent messages (tray callbacks, broadcasts) are handled inside GetMessageW
+                // without returning, so wake the loop to drain the queue.
+                PostMessageW(hwnd, WM_NULL, 0, 0);
                 return 0;
             }
         }
@@ -321,11 +324,10 @@ impl App {
                     &data,
                 ) == 0
                 {
+                    // Explorer may be busy or restarting; retry on the next refresh.
                     DestroyIcon(handle);
-                    return Err(format!(
-                        "Windows could not register the {} tray icon",
-                        kind.name()
-                    ));
+                    self.added[index] = false;
+                    continue;
                 }
                 if !self.added[index] {
                     self.added[index] = true;
@@ -411,7 +413,11 @@ impl App {
             DestroyMenu(menu);
             match command {
                 1 => self.refresh()?,
-                2 => toggle_startup(&self.options)?,
+                2 => {
+                    if let Err(error) = toggle_startup(&self.options) {
+                        show_error(&error);
+                    }
+                }
                 3 => return Ok(false),
                 _ => (),
             }
