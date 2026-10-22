@@ -56,7 +56,7 @@ fn registry_string(key: &str, name: &str) -> Option<String> {
         {
             return None;
         }
-        let mut value = vec![0u16; bytes as usize / 2];
+        let mut value = vec![0u16; (bytes as usize).div_ceil(2)];
         if RegGetValueW(
             HKEY_CURRENT_USER,
             wide(key).as_ptr(),
